@@ -43,11 +43,6 @@ data.rename( columns={'Unnamed: 0':'id'}, inplace=True )
 
 my_dict = {data['id'][i]: [data['tweets'][i], data['labels'][i]] for i in range(len(data['id']))}
 
-mapping = {'bad': 0, 'neutral': 1, 'good': 2}
-my_dict = {key: [value[0], mapping[value[1]]] for key, value in my_dict.items()}
-
-print(my_dict)
-
 # texts = []
 
 stop_words = set(stopwords.words('english'))
@@ -87,34 +82,13 @@ for key in texts:
   lemmated_tokens.append(lemmated_string)
 print(lemmated_tokens[0])
 
-MAX_SEQUENCE_LENGTH = 1000
-MAX_NUM_WORDS = 40000
-def tokenize(tokens):
-    tokenizer = Tokenizer(num_words=MAX_NUM_WORDS)
-    tokenizer.fit_on_texts(tokens)
-    sequences = tokenizer.texts_to_sequences(tokens)
-    word_index = tokenizer.word_index # the dictionary
-    data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
-    return word_index,data
-
-word_index ,data = tokenize(lemmated_tokens)
-print(word_index)
-
 VALIDATION_SPLIT = 0.2
 
 y = [my_dict[key][1] for key in my_dict]
 
-temp =[]
-for i in y:
-  if i == 0:
-    temp_1=[1,0,0]
-  elif i==1:
-    temp_1 = [0,1,0]
-  else:
-      temp_1=[0,0,1]
-  temp.append(temp_1)
-
-X_train, X_test, y_train, y_test = train_test_split(data, temp, test_size=0.2, random_state=42)
+print(lemmated_tokens)
+print(y)
+X_train, X_test, y_train, y_test = train_test_split(lemmated_tokens, y, test_size=0.2, random_state=42)
 X_train, x_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
 X_train_array = np.array(X_train)
@@ -124,59 +98,29 @@ y_test_array = np.array(y_test)
 x_val_array = np.array(x_val)
 y_val_array = np.array(y_val)
 
-def return_y(y):
-    temp_Y =[]
-    for i in range(len(y)):
-        if y[i][0] == 1:
-            temp_Y.append('bad')
-        elif y[i][1] == 1:
-            temp_Y.append('neutral')
-        else:
-            temp_Y.append('good')
-    return temp_Y
-
-def return_x(x):
-    word_strings = []
-    for word_array in x:
-        temp_word =""
-        for word in word_array:
-            for key in word_index.keys():
-                if word == word_index[key]:
-                    temp_word = temp_word + key+ " "
-        word_strings.append(temp_word)
-    return word_strings
-
-words_strings = return_x(X_train_array)
-y_file_train =return_y(y_train_array)
-
 filename = '/content/training_data.csv'
-with open(filename, 'w', newline='') as file:
+
+with open(filename, 'w', newline='',encoding='utf-8') as file:
     writer = csv.writer(file)
     writer.writerow(['tweets', 'label'])  # Write header
-    for i in range(len(words_strings)):
-        writer.writerow([words_strings[i],y_file_train[i]])
-
-words_strings = return_x(x_val_array)
-y_file_train =return_y(y_val_array)
+    for i in range(len(X_train_array)):
+        writer.writerow([X_train_array[i],y_train_array[i]])
 
 filename = '/content/validation_data.csv'
 
 with open(filename, 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(['tweets', 'label'])  # Write header
-    for i in range(len(words_strings)):
-        writer.writerow([words_strings[i],y_file_train[i]])
-
-words_strings = return_x(X_test_array)
-y_file_train =return_y(y_test_array)
+    for i in range(len(x_val_array)):
+        writer.writerow([x_val_array[i],y_val_array[i]])
 
 filename = '/content/testing_data.csv'
 
 with open(filename, 'w', newline='') as file:
     writer = csv.writer(file)
     writer.writerow(['tweets', 'label'])  # Write header
-    for i in range(len(words_strings)):
-        writer.writerow([words_strings[i],y_file_train[i]])
+    for i in range(len(X_test_array)):
+        writer.writerow([X_test_array[i],y_test_array[i]])
 
 def change_Y_to_Lists(y):
     temp =[]
@@ -199,26 +143,36 @@ def read_data_file(temp_dic):
     Y_List2 = change_Y_to_Lists(Y_List)
     return np.array(X_List) ,np.array(Y_List2)
 
-training_data = pd.read_csv('training_data.csv', encoding='iso-8859-1')
+training_data = pd.read_csv('/content/drive/MyDrive/glove/training_data.csv', encoding='iso-8859-1')
 training_data.head()
 
 training_X_array , training_Y_array = read_data_file(training_data)
 print(training_X_array)
 print(training_Y_array)
 
-validation_data = pd.read_csv('validation_data.csv', encoding='iso-8859-1')
+validation_data = pd.read_csv('/content/drive/MyDrive/glove/validation_data.csv', encoding='iso-8859-1')
 validation_data.head()
 
 validation_X_array , validation_Y_array = read_data_file(validation_data)
 print(validation_X_array)
 print(validation_Y_array)
 
-testing_data = pd.read_csv('testing_data.csv', encoding='iso-8859-1')
+testing_data = pd.read_csv('/content/drive/MyDrive/glove/testing_data.csv', encoding='iso-8859-1')
 testing_data.head()
 
 testing_X_array , testing_Y_array = read_data_file(testing_data)
 print(testing_X_array)
 print(testing_Y_array)
+
+MAX_SEQUENCE_LENGTH = 1000
+MAX_NUM_WORDS = 40000
+def tokenize(tokens):
+    tokenizer = Tokenizer(num_words=MAX_NUM_WORDS)
+    tokenizer.fit_on_texts(tokens)
+    sequences = tokenizer.texts_to_sequences(tokens)
+    word_index = tokenizer.word_index # the dictionary
+    data = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
+    return word_index,data
 
 testing_X_array,validation_X_array,training_X_array
 total_x_List =[]
@@ -283,13 +237,14 @@ def build_CNN(lr):
   cnn_model.summary()
   return cnn_model
 
-lr_list = [0.0001, 0.001, 0.01] # List of learning rates to try
+lr_list = [ 0.01, 0.001,0.00001,0.0001] # List of learning rates to try
 n_epochs = 10 # Number of epochs to train each model
 histories = [] # List to store the histories of each model
 for lr in lr_list:
     CNN_model = build_CNN(lr=lr)
-    history = CNN_model.fit(X_train_array, y_train_array, epochs=n_epochs, validation_data=(x_val_array, y_val_array), callbacks=[LearningRateScheduler(lambda epoch: lr)], batch_size=128)
-    CNN_model.evaluate(X_test_array, y_test_array)
+    history = CNN_model.fit(tarin_X_List, training_Y_array, epochs=n_epochs, validation_data=(valid_X_List, validation_Y_array),
+                            callbacks=[LearningRateScheduler(lambda epoch: lr)], batch_size=128)
+    CNN_model.evaluate(test_X_List, testing_Y_array)
     histories.append(history)
 
 # Plot the validation loss for each model
@@ -300,8 +255,6 @@ plt.xlabel('Epoch')
 plt.ylabel('Validation loss')
 plt.legend()
 plt.show()
-
-# model.predict(X_test_array)
 
 from keras.models import Sequential
 from keras.layers import Embedding, LSTM, Dense
@@ -321,14 +274,14 @@ def build_LSTM(lr):
   LSTM_model.summary()
   return LSTM_model
 
-lr_list_LSTM = [0.0001, 0.001, 0.01] # List of learning rates to try
+lr_list_LSTM = [ 0.01, 0.001,0.00001,0.0001] # List of learning rates to try
 n_epochs = 10 # Number of epochs to train each model
 LSTM_histories = [] # List to store the histories of each model
 for lr in lr_list_LSTM:
     LSTM_model = build_LSTM(lr=lr)
-    LSTM_history = LSTM_model.fit(X_train_array, y_train_array, epochs=n_epochs, validation_data=(x_val_array, y_val_array),
+    LSTM_history = LSTM_model.fit(tarin_X_List, training_Y_array, epochs=n_epochs, validation_data=(valid_X_List, validation_Y_array),
                                   callbacks=[LearningRateScheduler(lambda epoch: lr)], batch_size=128)
-    LSTM_model.evaluate(X_test_array, y_test_array)
+    LSTM_model.evaluate(test_X_List, testing_Y_array)
     LSTM_histories.append(LSTM_history)
 
 # Plot the validation loss for each model
@@ -339,11 +292,6 @@ plt.xlabel('Epoch')
 plt.ylabel('Validation loss')
 plt.legend()
 plt.show()
-
-# print('Acuracy on testing set:')
-# LSTM_model.evaluate(X_test_array, y_test_array)
-
-# LSTM_model.predict(X_test_array)
 
 tweet = input("Enter your tweet: ")
 print(tweet)
@@ -361,6 +309,30 @@ lemmatize_token.append(tweet)
 tweet_word_index, tweet_data=tokenize(lemmatize_token)
 
 label_vec = CNN_model.predict(tweet_data[0].reshape(1,-1))
+
+actual_labels = {'negative': 0, 'neutral': 1, 'positive': 2}
+probs = np.array(label_vec)
+index = np.argmax(probs)
+output_label = list(actual_labels.keys())[list(actual_labels.values()).index(index)]
+
+print(output_label)
+
+tweet = input("Enter your tweet: ")
+print(tweet)
+
+tweet = preprocess(tweet)
+
+lemmatize_token = []
+words = tweet.split()
+lemmatize_string = ""
+for word_2 in words:
+  lemmatize_string = lemmatize_string + lemmatizer.lemmatize(word_2)+" "
+tweet = lemmatize_string
+lemmatize_token.append(tweet)
+
+tweet_word_index, tweet_data=tokenize(lemmatize_token)
+
+label_vec = LSTM_model.predict(tweet_data[0].reshape(1,-1))
 
 actual_labels = {'negative': 0, 'neutral': 1, 'positive': 2}
 probs = np.array(label_vec)
